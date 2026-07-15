@@ -1,0 +1,8 @@
+{
+  "name": "GitPatrol",
+  "description": "A Telegram Mini App dashboard for monitoring GitHub repos (pull requests, issues, CI status).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
