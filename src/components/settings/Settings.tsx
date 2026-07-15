@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { mockSettings, mockRepos } from "../../lib/mockData";
+import { mockSettings, mockRepos, mockAccounts } from "../../lib/mockData";
 import { NotificationSettings } from "../../types";
+import { Avatar } from "../shared/Avatar";
+import { Github, Gitlab, Server, Plus } from "lucide-react";
 
 export function Settings() {
   const [settings, setSettings] = useState<NotificationSettings>(mockSettings);
 
-  const toggleSetting = (key: keyof NotificationSettings) => {
+  const updateSetting = (key: keyof NotificationSettings, value: "instant" | "digest" | "off") => {
     if (key === "ciFailures") return; // Locked
-    setSettings({ ...settings, [key]: !settings[key] });
+    setSettings({ ...settings, [key]: value });
   };
 
   const setFrequency = (freq: NotificationSettings["digestFrequency"]) => {
@@ -15,7 +17,7 @@ export function Settings() {
   };
 
   return (
-    <div className="p-4 space-y-8 animate-in fade-in duration-300">
+    <div className="p-4 space-y-8 animate-in fade-in duration-300 pb-20">
       <header className="pt-2">
         <h1 className="font-heading text-2xl font-bold tracking-tight text-[#E7EAF0]">
           Settings
@@ -24,38 +26,78 @@ export function Settings() {
 
       <section className="space-y-4">
         <h2 className="font-heading text-sm font-semibold text-[#8A93A3] uppercase tracking-wider">
+          Accounts & Providers
+        </h2>
+        <div className="space-y-3">
+          {mockAccounts.map((account) => (
+            <div
+              key={account.id}
+              className="flex items-center justify-between bg-[#161B24] border border-[#242B36] p-4 rounded-xl"
+            >
+              <div className="flex items-center space-x-3">
+                <Avatar initials={account.initials} color={account.avatarColor} size="md" />
+                <div>
+                  <div className="text-sm font-medium text-[#E7EAF0] leading-tight">{account.handle}</div>
+                  <div className="flex items-center space-x-1 mt-1 text-[#8A93A3]">
+                    {account.provider === "github" && <Github size={12} />}
+                    {account.provider === "github_enterprise" && <Server size={12} />}
+                    {account.provider === "gitlab" && <Gitlab size={12} />}
+                    <span className="text-[10px] capitalize font-medium">{account.provider.replace('_', ' ')}</span>
+                    {account.isEnterprise && <span className="text-[9px] bg-[#8B7FFF]/15 text-[#8B7FFF] px-1.5 py-0.5 rounded ml-1 font-mono">ENT</span>}
+                  </div>
+                </div>
+              </div>
+              <button className="text-xs font-medium text-[#FF6B6B] px-3 py-1.5 rounded bg-[#FF6B6B]/10 hover:bg-[#FF6B6B]/20 transition-colors">
+                Remove
+              </button>
+            </div>
+          ))}
+          <button className="w-full py-4 border border-dashed border-[#242B36] rounded-xl flex items-center justify-center space-x-2 text-[#8A93A3] hover:text-[#E7EAF0] hover:border-[#8B7FFF]/50 hover:bg-[#8B7FFF]/5 transition-colors">
+            <Plus size={16} />
+            <span className="text-sm font-medium">Add Provider</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading text-sm font-semibold text-[#8A93A3] uppercase tracking-wider">
           Notifications
         </h2>
         <div className="bg-[#161B24] border border-[#242B36] rounded-xl overflow-hidden">
-          <ToggleRow
+          <SegmentedRow
             label="New pull requests"
-            enabled={settings.newPRs}
-            onChange={() => toggleSetting("newPRs")}
+            value={settings.newPRs}
+            onChange={(val) => updateSetting("newPRs", val)}
           />
-          <ToggleRow
+          <SegmentedRow
             label="CI failures on main"
-            enabled={settings.ciFailures}
+            value={settings.ciFailures}
             locked
-            onChange={() => toggleSetting("ciFailures")}
+            onChange={(val) => updateSetting("ciFailures", val)}
           />
-          <ToggleRow
+          <SegmentedRow
             label="New issues"
-            enabled={settings.newIssues}
-            onChange={() => toggleSetting("newIssues")}
+            value={settings.newIssues}
+            onChange={(val) => updateSetting("newIssues", val)}
           />
-          <ToggleRow
+          <SegmentedRow
             label="Releases & tags"
-            enabled={settings.releases}
-            onChange={() => toggleSetting("releases")}
+            value={settings.releases}
+            onChange={(val) => updateSetting("releases", val)}
             isLast
           />
         </div>
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-heading text-sm font-semibold text-[#8A93A3] uppercase tracking-wider">
-          Digest Frequency
-        </h2>
+        <div>
+          <h2 className="font-heading text-sm font-semibold text-[#8A93A3] uppercase tracking-wider">
+            Digest Frequency
+          </h2>
+          <p className="text-xs text-[#8A93A3] mt-1">
+            Applies to any notification type set to Digest
+          </p>
+        </div>
         <div className="flex space-x-2 bg-[#161B24] border border-[#242B36] p-1.5 rounded-xl">
           {(["off", "hourly", "daily"] as const).map((freq) => (
             <button
@@ -95,22 +137,22 @@ export function Settings() {
   );
 }
 
-function ToggleRow({
+function SegmentedRow({
   label,
-  enabled,
+  value,
   locked,
   isLast,
   onChange,
 }: {
   label: string;
-  enabled: boolean;
+  value: "instant" | "digest" | "off";
   locked?: boolean;
   isLast?: boolean;
-  onChange: () => void;
+  onChange: (val: "instant" | "digest" | "off") => void;
 }) {
   return (
     <div
-      className={`flex items-center justify-between p-4 ${
+      className={`flex flex-col space-y-3 p-4 ${
         !isLast ? "border-b border-[#242B36]" : ""
       }`}
     >
@@ -118,19 +160,21 @@ function ToggleRow({
         {label}
         {locked && <span className="ml-2 text-[10px] uppercase tracking-wider">Required</span>}
       </span>
-      <button
-        onClick={onChange}
-        disabled={locked}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          enabled ? "bg-[#8B7FFF]" : "bg-[#242B36]"
-        } ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            enabled ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
+      <div className={`flex space-x-1 bg-[#0B0E13] border border-[#242B36] p-1 rounded-lg ${locked ? "opacity-50 pointer-events-none" : ""}`}>
+        {(["instant", "digest", "off"] as const).map((opt) => (
+          <button
+            key={opt}
+            onClick={() => onChange(opt)}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
+              value === opt
+                ? "bg-[#242B36] text-[#E7EAF0]"
+                : "text-[#8A93A3] hover:text-[#E7EAF0]"
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

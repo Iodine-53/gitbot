@@ -1,22 +1,38 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { mockRepos, mockPRs, mockIssues, mockActivity } from "../../lib/mockData";
 import { PRListItem } from "./PRListItem";
 import { IssueListItem } from "./IssueListItem";
 import { ActivityFeed } from "../dashboard/ActivityFeed";
-import { ChevronLeft } from "lucide-react";
+import { ActionsTab } from "./ActionsTab";
+import { ChevronLeft, Plus } from "lucide-react";
 
-type Tab = "prs" | "issues" | "activity";
+type Tab = "prs" | "issues" | "activity" | "actions";
 
 export function RepoDetail() {
   const { repoId } = useParams<{ repoId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("prs");
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 
   const repo = mockRepos.find((r) => r.id === repoId);
   const prs = mockPRs[repoId || ""] || [];
   const issues = mockIssues[repoId || ""] || [];
   const activities = mockActivity.filter((a) => a.repoId === repoId);
+
+  const displayLabels = useMemo(() => {
+    const labels = Array.from(new Set(issues.flatMap(i => i.labels)));
+    if (issues.some(i => i.labels.length === 0) && !labels.includes("unlabeled")) {
+      labels.push("unlabeled");
+    }
+    return labels.length > 0 ? labels : ["bug", "feature", "stale", "unlabeled"];
+  }, [issues]);
+
+  const filteredIssues = useMemo(() => {
+    if (!selectedLabel) return issues;
+    if (selectedLabel === "unlabeled") return issues.filter(i => i.labels.length === 0);
+    return issues.filter(i => i.labels.includes(selectedLabel));
+  }, [issues, selectedLabel]);
 
   if (!repo) return <div className="p-4">Repo not found</div>;
 
@@ -34,14 +50,14 @@ export function RepoDetail() {
           {repo.name}
         </h1>
         
-        <div className="flex space-x-6 border-b border-[#242B36]">
-          {(["prs", "issues", "activity"] as Tab[]).map((tab) => {
-            const labels = { prs: "Pull Requests", issues: "Issues", activity: "Activity" };
+        <div className="flex space-x-6 border-b border-[#242B36] overflow-x-auto no-scrollbar">
+          {(["prs", "issues", "activity", "actions"] as Tab[]).map((tab) => {
+            const labels = { prs: "Pull Requests", issues: "Issues", activity: "Activity", actions: "CI/CD" };
             return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 text-sm font-medium transition-colors relative ${
+                className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
                   activeTab === tab ? "text-[#8B7FFF]" : "text-[#8A93A3] hover:text-[#E7EAF0]"
                 }`}
               >
@@ -69,19 +85,35 @@ export function RepoDetail() {
         {activeTab === "issues" && (
           <div className="space-y-3">
             <div className="flex space-x-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
-              {["bug", "feature", "high-priority"].map((label) => (
-                <button
-                  key={label}
-                  className="whitespace-nowrap px-3 py-1 rounded-full bg-[#161B24] border border-[#242B36] text-xs text-[#E7EAF0]"
-                >
-                  {label}
-                </button>
-              ))}
+              {displayLabels.map((label) => {
+                const isSelected = selectedLabel === label;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => setSelectedLabel(isSelected ? null : label)}
+                    className={`whitespace-nowrap px-3 py-1 rounded-full border text-xs transition-colors ${
+                      isSelected
+                        ? "bg-[#8B7FFF] border-[#8B7FFF] text-[#0B0E13]"
+                        : "bg-[#161B24] border-[#242B36] text-[#E7EAF0] hover:border-[#8B7FFF]/50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
-            {issues.length === 0 ? (
+            
+            <button className="w-full py-4 mb-2 border border-dashed border-[#242B36] rounded-xl flex items-center justify-center space-x-2 text-[#8A93A3] hover:text-[#E7EAF0] hover:border-[#8B7FFF]/50 hover:bg-[#8B7FFF]/5 transition-colors">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#242B36] text-[#E7EAF0]">
+                <Plus size={12} />
+              </span>
+              <span className="text-sm font-medium">New Issue from Chat</span>
+            </button>
+
+            {filteredIssues.length === 0 ? (
               <p className="text-[#8A93A3] text-sm text-center py-8">No open issues</p>
             ) : (
-              issues.map((issue) => <IssueListItem key={issue.id} issue={issue} />)
+              filteredIssues.map((issue) => <IssueListItem key={issue.id} issue={issue} />)
             )}
           </div>
         )}
@@ -94,6 +126,10 @@ export function RepoDetail() {
               <ActivityFeed events={activities} />
             )}
           </div>
+        )}
+
+        {activeTab === "actions" && (
+          <ActionsTab repoId={repoId} />
         )}
       </div>
     </div>

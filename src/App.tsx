@@ -8,6 +8,7 @@ import { TelegramShell } from "./components/layout/TelegramShell";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { RepoDetail } from "./components/repo/RepoDetail";
 import { PRDetail } from "./components/pr-detail/PRDetail";
+import { IssueDetail } from "./components/issue-detail/IssueDetail";
 import { Settings } from "./components/settings/Settings";
 import { Pulls } from "./components/pulls/Pulls";
 import { Issues } from "./components/issues/Issues";
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/repo/:repoId" element={<RepoDetail />} />
           <Route path="/repo/:repoId/pr/:prId" element={<PRDetail />} />
+          <Route path="/repo/:repoId/issue/:issueId" element={<IssueDetail />} />
         </Routes>
       </TelegramShell>
     </BrowserRouter>

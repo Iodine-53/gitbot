@@ -1,3 +1,13 @@
+export interface Account {
+  id: string;
+  provider: "github" | "github_enterprise" | "gitlab" | "bitbucket";
+  handle: string;
+  avatarColor: string;
+  initials: string;
+  isEnterprise?: boolean;
+  enterpriseUrl?: string;
+}
+
 export interface Repo {
   id: string;
   name: string;
@@ -35,6 +45,13 @@ export interface Issue {
   title: string;
   labels: string[];
   openedAt: string;
+  assignees?: {
+    name: string;
+    avatarColor: string;
+    initials: string;
+  }[];
+  body?: string;
+  linkedChat?: string;
 }
 
 export interface ActivityEvent {
@@ -46,10 +63,30 @@ export interface ActivityEvent {
   timestamp: string;
 }
 
+export interface Workflow {
+  id: string;
+  repoId: string;
+  name: string;
+  description: string;
+  dispatchable: boolean;
+}
+
+export interface WorkflowRun {
+  id: string;
+  repoId: string;
+  name: string;
+  status: "in_progress" | "completed" | "queued";
+  conclusion: "success" | "failure" | "cancelled" | "skipped" | null;
+  branch: string;
+  trigger: "push" | "manual" | "pull_request";
+  startedAt: string;
+  duration: string;
+}
+
 export interface NotificationSettings {
-  newPRs: boolean;
-  ciFailures: boolean; // Locked to true
-  newIssues: boolean;
-  releases: boolean;
+  newPRs: "instant" | "digest" | "off";
+  ciFailures: "instant"; // Locked to instant
+  newIssues: "instant" | "digest" | "off";
+  releases: "instant" | "digest" | "off";
   digestFrequency: "off" | "hourly" | "daily";
 }

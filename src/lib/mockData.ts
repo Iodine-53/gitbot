@@ -1,4 +1,30 @@
-import { ActivityEvent, Issue, NotificationSettings, PullRequest, Repo } from '../types';
+import { Account, ActivityEvent, Issue, NotificationSettings, PullRequest, Repo, Workflow, WorkflowRun } from '../types';
+
+export const mockAccounts: Account[] = [
+  {
+    id: "acc-1",
+    provider: "github",
+    handle: "personal-dev",
+    avatarColor: "bg-blue-500",
+    initials: "PD",
+  },
+  {
+    id: "acc-2",
+    provider: "github_enterprise",
+    handle: "acme-corp-admin",
+    avatarColor: "bg-purple-500",
+    initials: "AC",
+    isEnterprise: true,
+    enterpriseUrl: "github.acme.corp",
+  },
+  {
+    id: "acc-3",
+    provider: "gitlab",
+    handle: "gitlab-user",
+    avatarColor: "bg-orange-500",
+    initials: "GU",
+  }
+];
 
 export const mockRepos: Repo[] = [
   {
@@ -109,7 +135,12 @@ export const mockIssues: Record<string, Issue[]> = {
       number: 399,
       title: "App crashes on iOS 15 Safari",
       labels: ["bug", "high-priority"],
-      openedAt: "1 day ago"
+      openedAt: "1 day ago",
+      assignees: [
+        { name: "Alice Smith", avatarColor: "bg-blue-500", initials: "AS" }
+      ],
+      body: "When opening the app on iOS 15 Safari, it immediately crashes with a white screen. Console shows a Regex constraint error.",
+      linkedChat: "Telegram Chat: Customer Support Group"
     },
     {
       id: "issue-2",
@@ -117,7 +148,9 @@ export const mockIssues: Record<string, Issue[]> = {
       number: 400,
       title: "Add dark mode toggle to settings",
       labels: ["feature", "good first issue"],
-      openedAt: "3 days ago"
+      openedAt: "3 days ago",
+      assignees: [],
+      body: "We need a way for users to manually toggle dark mode overriding system settings."
     }
   ]
 };
@@ -158,9 +191,31 @@ export const mockActivity: ActivityEvent[] = [
 ];
 
 export const mockSettings: NotificationSettings = {
-  newPRs: true,
-  ciFailures: true,
-  newIssues: false,
-  releases: true,
+  newPRs: "instant",
+  ciFailures: "instant",
+  newIssues: "off",
+  releases: "digest",
   digestFrequency: "hourly"
+};
+
+export const mockWorkflows: Record<string, Workflow[]> = {
+  "repo-1": [
+    { id: "wf-1", repoId: "repo-1", name: "CI Pipeline", description: "Runs linting and tests", dispatchable: false },
+    { id: "wf-2", repoId: "repo-1", name: "Production Deploy", description: "Deploys main to prod", dispatchable: true },
+    { id: "wf-3", repoId: "repo-1", name: "Rollback", description: "Reverts prod to previous release", dispatchable: true },
+  ],
+  "repo-2": [
+    { id: "wf-4", repoId: "repo-2", name: "Build and Push Container", description: "Builds Docker image", dispatchable: true },
+  ]
+};
+
+export const mockWorkflowRuns: Record<string, WorkflowRun[]> = {
+  "repo-1": [
+    { id: "run-1", repoId: "repo-1", name: "CI Pipeline", status: "completed", conclusion: "failure", branch: "main", trigger: "push", startedAt: "10m ago", duration: "2m 14s" },
+    { id: "run-2", repoId: "repo-1", name: "Production Deploy", status: "completed", conclusion: "success", branch: "main", trigger: "manual", startedAt: "2h ago", duration: "5m 30s" },
+    { id: "run-3", repoId: "repo-1", name: "CI Pipeline", status: "in_progress", conclusion: null, branch: "feat/new-dashboard", trigger: "pull_request", startedAt: "1m ago", duration: "1m 12s" },
+  ],
+  "repo-2": [
+    { id: "run-4", repoId: "repo-2", name: "Build and Push Container", status: "completed", conclusion: "success", branch: "master", trigger: "push", startedAt: "1d ago", duration: "4m 20s" }
+  ]
 };
