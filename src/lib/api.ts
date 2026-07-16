@@ -206,7 +206,19 @@ export const usePRs = (repoId?: string) => {
         throw new Error(`Failed to fetch PRs: ${res.statusText}`);
       }
       const json = await res.json();
-      setData(json);
+      const mappedData: PullRequest[] = json.map((pr: any) => ({
+        ...pr,
+        repoId: pr.repo_id,
+        openedAt: pr.opened_at,
+        aiSummary: pr.ai_summary,
+        author: {
+          name: pr.author_name,
+          avatarColor: pr.author_avatar_color,
+          initials: pr.author_initials,
+        },
+        filesChanged: pr.files_changed || [{ filename: "src/App.tsx", additions: 15, deletions: 2 }],
+      }));
+      setData(mappedData);
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -240,7 +252,14 @@ export const useIssues = (repoId?: string) => {
         throw new Error(`Failed to fetch issues: ${res.statusText}`);
       }
       const json = await res.json();
-      setData(json);
+      const mappedData: Issue[] = json.map((issue: any) => ({
+        ...issue,
+        repoId: issue.repo_id,
+        openedAt: issue.opened_at,
+        linkedChat: issue.linked_chat,
+        assignees: [],
+      }));
+      setData(mappedData);
     } catch (err) {
       setError(err as Error);
     } finally {

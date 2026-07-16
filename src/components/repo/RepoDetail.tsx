@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useRepo, usePRs, useIssues, useActivity } from "../../lib/api";
+import { useRepos, usePRs, useIssues, useActivity } from "../../lib/api";
 import { PRListItem } from "./PRListItem";
 import { IssueListItem } from "./IssueListItem";
 import { ActivityFeed } from "../dashboard/ActivityFeed";
@@ -15,9 +15,10 @@ export function RepoDetail() {
   const [activeTab, setActiveTab] = useState<Tab>("prs");
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 
-  const { data: repo, loading: loadingRepo } = useRepo(repoId!);
-  const { data: prsData, loading: loadingPRs } = usePRs(repoId);
-  const { data: issuesData, loading: loadingIssues } = useIssues(repoId);
+  const { data: repos, loading: reposLoading } = useRepos();
+  const repo = repos?.find((r) => r.id === repoId);
+  const { data: prsData, loading: prsLoading } = usePRs(repoId);
+  const { data: issuesData, loading: issuesLoading } = useIssues(repoId);
   const { data: activitiesData, loading: loadingActivity } = useActivity(repoId);
 
   const prs = prsData || [];
@@ -25,7 +26,7 @@ export function RepoDetail() {
   const activities = activitiesData || [];
 
   const displayLabels = useMemo(() => {
-    if (!issuesData) return ["bug", "feature", "stale", "unlabeled"];
+    if (!issues) return ["bug", "feature", "stale", "unlabeled"];
     const labels = Array.from(new Set(issues.flatMap(i => i.labels)));
     if (issues.some(i => i.labels.length === 0) && !labels.includes("unlabeled")) {
       labels.push("unlabeled");
@@ -39,7 +40,8 @@ export function RepoDetail() {
     return issues.filter(i => i.labels.includes(selectedLabel));
   }, [issues, selectedLabel]);
 
-  if (loadingRepo) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
+  if (reposLoading || prsLoading || issuesLoading || loadingActivity) return <div className='p-4 text-[#8A93A3]'>Loading repository details...</div>;
+
   if (!repo) return <div className="p-4">Repo not found</div>;
 
   return (
@@ -73,9 +75,9 @@ export function RepoDetail() {
       <div className="p-4 space-y-4">
         {activeTab === "prs" && (
           <div className="space-y-3">
-            {loadingPRs ? (
+            {prsLoading ? (
                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#8A93A3]" /></div>
-            ) : prs.length === 0 ? (
+            ) : !prs || prs.length === 0 ? (
               <p className="text-[#8A93A3] text-sm text-center py-8">No open pull requests</p>
             ) : (
               prs.map((pr) => <PRListItem key={pr.id} pr={pr} />)
@@ -111,9 +113,9 @@ export function RepoDetail() {
               <span className="text-sm font-medium">New Issue from Chat</span>
             </button>
 
-            {loadingIssues ? (
+            {issuesLoading ? (
                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#8A93A3]" /></div>
-            ) : filteredIssues.length === 0 ? (
+            ) : !filteredIssues || filteredIssues.length === 0 ? (
               <p className="text-[#8A93A3] text-sm text-center py-8">No open issues</p>
             ) : (
               filteredIssues.map((issue) => <IssueListItem key={issue.id} issue={issue} />)
