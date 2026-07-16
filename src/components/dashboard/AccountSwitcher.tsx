@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { mockAccounts } from "../../lib/mockData";
 import { Avatar } from "../shared/Avatar";
-import { ChevronDown, Check, Plus, Github, Gitlab, Server } from "lucide-react";
+import { ChevronDown, Check, Plus, Github, Gitlab, Server, Loader2 } from "lucide-react";
 import { Account } from "../../types";
+import { useAppContext } from "../../context/AppContext";
 
 export function AccountSwitcher() {
+  const { activeAccount, setActiveAccount, accounts, loadingAccounts } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeAccount, setActiveAccount] = useState<Account>(mockAccounts[0]);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,6 +29,10 @@ export function AccountSwitcher() {
     }
   };
 
+  if (loadingAccounts || !activeAccount) {
+    return <div className="animate-pulse w-32 h-8 bg-[#161B24] border border-[#242B36] rounded-full"></div>;
+  }
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -45,7 +50,7 @@ export function AccountSwitcher() {
             <span className="text-[10px] font-semibold text-[#8A93A3] uppercase tracking-wider">Switch Account</span>
           </div>
           <div className="max-h-60 overflow-y-auto">
-            {mockAccounts.map((account) => (
+            {accounts?.map((account) => (
               <button
                 key={account.id}
                 onClick={() => { setActiveAccount(account); setIsOpen(false); }}

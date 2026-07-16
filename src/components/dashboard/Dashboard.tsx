@@ -1,12 +1,21 @@
 import { RepoCard } from "./RepoCard";
 import { ActivityFeed } from "./ActivityFeed";
-import { mockRepos, mockActivity } from "../../lib/mockData";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
+import { useRepos, useActivity } from "../../lib/api";
+import { useAppContext } from "../../context/AppContext";
 
 export function Dashboard() {
+  const { activeAccount } = useAppContext();
+  const { data: repos, loading: loadingRepos } = useRepos(activeAccount?.id);
+  const { data: activity, loading: loadingActivity } = useActivity();
+
+  if (loadingRepos || loadingActivity) {
+    return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
+  }
+
   // Sort repos: failing first
-  const sortedRepos = [...mockRepos].sort((a, b) => {
+  const sortedRepos = [...(repos || [])].sort((a, b) => {
     if (a.ciStatus === "failing" && b.ciStatus === "passing") return -1;
     if (a.ciStatus === "passing" && b.ciStatus === "failing") return 1;
     return 0;
@@ -20,7 +29,7 @@ export function Dashboard() {
             Dashboard
           </h1>
           <p className="text-sm text-[#8A93A3] mt-1">
-            Monitoring {mockRepos.length} repositories
+            Monitoring {repos?.length || 0} repositories
           </p>
         </div>
         <AccountSwitcher />
@@ -46,7 +55,7 @@ export function Dashboard() {
           Today's Activity
         </h2>
         <div className="bg-[#161B24] border border-[#242B36] rounded-xl p-4">
-          <ActivityFeed events={mockActivity} />
+          <ActivityFeed events={activity || []} />
         </div>
       </section>
     </div>

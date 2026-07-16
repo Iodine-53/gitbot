@@ -4,6 +4,7 @@
  */
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AppContextProvider } from "./context/AppContext";
 import { TelegramShell } from "./components/layout/TelegramShell";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { RepoDetail } from "./components/repo/RepoDetail";
@@ -15,18 +16,20 @@ import { Issues } from "./components/issues/Issues";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <TelegramShell>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/pulls" element={<Pulls />} />
-          <Route path="/issues" element={<Issues />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/repo/:repoId" element={<RepoDetail />} />
-          <Route path="/repo/:repoId/pr/:prId" element={<PRDetail />} />
-          <Route path="/repo/:repoId/issue/:issueId" element={<IssueDetail />} />
-        </Routes>
-      </TelegramShell>
-    </BrowserRouter>
+    <AppContextProvider>
+      <BrowserRouter>
+        <TelegramShell>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/pulls" element={<Pulls />} />
+            <Route path="/issues" element={<Issues />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/repo/:repoId" element={<RepoDetail />} />
+            <Route path="/repo/:repoId/pr/:prId" element={<PRDetail />} />
+            <Route path="/repo/:repoId/issue/:issueId" element={<IssueDetail />} />
+          </Routes>
+        </TelegramShell>
+      </BrowserRouter>
+    </AppContextProvider>
   );
 }

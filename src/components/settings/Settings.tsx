@@ -1,20 +1,41 @@
-import { useState } from "react";
-import { mockSettings, mockRepos, mockAccounts } from "../../lib/mockData";
+import { useState, useEffect } from "react";
+import { useSettings, useAccounts, useRepos, api } from "../../lib/api";
 import { NotificationSettings } from "../../types";
 import { Avatar } from "../shared/Avatar";
-import { Github, Gitlab, Server, Plus } from "lucide-react";
+import { Github, Gitlab, Server, Plus, Loader2 } from "lucide-react";
+import { useAppContext } from "../../context/AppContext";
 
 export function Settings() {
-  const [settings, setSettings] = useState<NotificationSettings>(mockSettings);
+  const { activeAccount } = useAppContext();
+  const { data: fetchedSettings, loading: loadingSettings, mutate: refreshSettings } = useSettings();
+  const { data: accounts, loading: loadingAccounts } = useAccounts();
+  const { data: repos, loading: loadingRepos } = useRepos(activeAccount?.id);
 
-  const updateSetting = (key: keyof NotificationSettings, value: "instant" | "digest" | "off") => {
-    if (key === "ciFailures") return; // Locked
-    setSettings({ ...settings, [key]: value });
+  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+
+  useEffect(() => {
+    if (fetchedSettings) {
+      setSettings(fetchedSettings);
+    }
+  }, [fetchedSettings]);
+
+  const updateSetting = async (key: keyof NotificationSettings, value: "instant" | "digest" | "off") => {
+    if (key === "ciFailures" || !settings) return; // Locked
+    const next = { ...settings, [key]: value };
+    setSettings(next);
+    await api.updateSettings(next);
   };
 
-  const setFrequency = (freq: NotificationSettings["digestFrequency"]) => {
-    setSettings({ ...settings, digestFrequency: freq });
+  const setFrequency = async (freq: NotificationSettings["digestFrequency"]) => {
+    if (!settings) return;
+    const next = { ...settings, digestFrequency: freq };
+    setSettings(next);
+    await api.updateSettings(next);
   };
+
+  if (loadingSettings || loadingAccounts || loadingRepos || !settings) {
+    return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
+  }
 
   return (
     <div className="p-4 space-y-8 animate-in fade-in duration-300 pb-20">
@@ -29,7 +50,7 @@ export function Settings() {
           Accounts & Providers
         </h2>
         <div className="space-y-3">
-          {mockAccounts.map((account) => (
+          {accounts?.map((account) => (
             <div
               key={account.id}
               className="flex items-center justify-between bg-[#161B24] border border-[#242B36] p-4 rounded-xl"
@@ -120,7 +141,7 @@ export function Settings() {
           Connected Repos
         </h2>
         <div className="space-y-3">
-          {mockRepos.map((repo) => (
+          {repos?.map((repo) => (
             <div
               key={repo.id}
               className="flex items-center justify-between bg-[#161B24] border border-[#242B36] p-4 rounded-xl"

@@ -1,26 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { mockIssues, mockAccounts } from "../../lib/mockData";
+import { useIssue, useAccounts, api } from "../../lib/api";
 import { Avatar } from "../shared/Avatar";
-import { ChevronLeft, CircleDot, MessageSquare, Plus, Tag as TagIcon, X } from "lucide-react";
+import { ChevronLeft, CircleDot, MessageSquare, Plus, Tag as TagIcon, X, Loader2 } from "lucide-react";
 
 export function IssueDetail() {
   const { repoId, issueId } = useParams<{ repoId: string; issueId: string }>();
   const navigate = useNavigate();
 
-  // Find issue in mock data
-  const repoIssues = mockIssues[repoId || ""] || [];
-  const initialIssue = repoIssues.find((i) => i.id === issueId);
+  const { data: fetchedIssue, loading: loadingIssue } = useIssue(repoId!, issueId!);
+  const { data: accounts, loading: loadingAccounts } = useAccounts();
 
-  const [issue, setIssue] = useState(initialIssue);
+  const [issue, setIssue] = useState(fetchedIssue);
   const [showAssignees, setShowAssignees] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
 
+  useEffect(() => {
+    if (fetchedIssue) setIssue(fetchedIssue);
+  }, [fetchedIssue]);
+
   const availableLabels = ["bug", "feature", "high-priority", "good first issue", "stale", "documentation"];
 
+  if (loadingIssue || loadingAccounts) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
   if (!issue) return <div className="p-4">Issue not found</div>;
 
-  const toggleAssignee = (account: typeof mockAccounts[0]) => {
+  const toggleAssignee = async (account: NonNullable<typeof accounts>[0]) => {
     const current = issue.assignees || [];
     const exists = current.find(a => a.name === account.handle);
     let next;
@@ -30,9 +34,10 @@ export function IssueDetail() {
       next = [...current, { name: account.handle, avatarColor: account.avatarColor, initials: account.initials }];
     }
     setIssue({ ...issue, assignees: next });
+    await api.updateIssue(repoId!, issueId!, { assignees: next });
   };
 
-  const toggleLabel = (label: string) => {
+  const toggleLabel = async (label: string) => {
     const exists = issue.labels.includes(label);
     let next;
     if (exists) {
@@ -41,20 +46,16 @@ export function IssueDetail() {
       next = [...issue.labels, label];
     }
     setIssue({ ...issue, labels: next });
+    await api.updateIssue(repoId!, issueId!, { labels: next });
+  };
+
+  const updateLinkedChat = async (linkedChat: string | undefined) => {
+    setIssue({ ...issue, linkedChat });
+    await api.updateIssue(repoId!, issueId!, { linkedChat });
   };
 
   return (
     <div className="flex flex-col pb-8 animate-in slide-in-from-right-4 duration-300">
-      <header className="sticky top-0 z-10 bg-[#0B0E13]/90 backdrop-blur-md border-b border-[#242B36] p-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center space-x-2 text-[#8A93A3] hover:text-[#E7EAF0] transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span className="font-medium text-sm">Back</span>
-        </button>
-      </header>
-
       <div className="p-4 space-y-6">
         {/* Header section */}
         <div>
@@ -100,7 +101,7 @@ export function IssueDetail() {
                   <button onClick={() => setShowAssignees(false)} className="text-[#8A93A3] hover:text-[#E7EAF0]"><X size={14}/></button>
                 </div>
                 <div className="max-h-48 overflow-y-auto p-1">
-                  {mockAccounts.map(account => {
+                  {accounts?.map(account => {
                     const isAssigned = issue.assignees?.some(a => a.name === account.handle);
                     return (
                       <button
@@ -169,7 +170,7 @@ export function IssueDetail() {
             </div>
             {!issue.linkedChat && (
               <button
-                onClick={() => setIssue({ ...issue, linkedChat: "Telegram Chat: Triage Thread" })}
+                onClick={() => updateLinkedChat("Telegram Chat: Triage Thread")}
                 className="text-xs font-medium bg-[#8B7FFF]/10 text-[#8B7FFF] border border-[#8B7FFF]/20 px-3 py-1.5 rounded-lg hover:bg-[#8B7FFF]/20 transition-colors"
               >
                 Link Current Chat
@@ -180,7 +181,7 @@ export function IssueDetail() {
             <div className="mt-3 text-xs text-[#8A93A3] flex items-center justify-between">
               <span>Linked to: <strong className="text-[#E7EAF0]">{issue.linkedChat}</strong></span>
               <button 
-                onClick={() => setIssue({ ...issue, linkedChat: undefined })}
+                onClick={() => updateLinkedChat(undefined)}
                 className="text-[#FF6B6B] hover:underline"
               >
                 Unlink

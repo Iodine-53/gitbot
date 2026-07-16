@@ -10,6 +10,7 @@ export interface Account {
 
 export interface Repo {
   id: string;
+  accountId: string;
   name: string;
   defaultBranch: string;
   openPRCount: number;

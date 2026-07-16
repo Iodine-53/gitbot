@@ -29,6 +29,7 @@ export const mockAccounts: Account[] = [
 export const mockRepos: Repo[] = [
   {
     id: "repo-1",
+    accountId: "acc-2",
     name: "acme-corp/frontend-app",
     defaultBranch: "main",
     openPRCount: 12,
@@ -38,6 +39,7 @@ export const mockRepos: Repo[] = [
   },
   {
     id: "repo-2",
+    accountId: "acc-2",
     name: "acme-corp/auth-service",
     defaultBranch: "master",
     openPRCount: 3,
@@ -47,6 +49,7 @@ export const mockRepos: Repo[] = [
   },
   {
     id: "repo-3",
+    accountId: "acc-2",
     name: "acme-corp/design-system",
     defaultBranch: "main",
     openPRCount: 8,
@@ -56,12 +59,33 @@ export const mockRepos: Repo[] = [
   },
   {
     id: "repo-4",
+    accountId: "acc-2",
     name: "acme-corp/infra-as-code",
     defaultBranch: "main",
     openPRCount: 1,
     openIssueCount: 1,
     ciStatus: "passing",
     healthRatio: 1.0,
+  },
+  {
+    id: "repo-5",
+    accountId: "acc-1",
+    name: "personal-dev/dotfiles",
+    defaultBranch: "main",
+    openPRCount: 0,
+    openIssueCount: 2,
+    ciStatus: "passing",
+    healthRatio: 0.99,
+  },
+  {
+    id: "repo-6",
+    accountId: "acc-3",
+    name: "gitlab-user/nextjs-starter",
+    defaultBranch: "main",
+    openPRCount: 2,
+    openIssueCount: 4,
+    ciStatus: "passing",
+    healthRatio: 0.85,
   }
 ];
 

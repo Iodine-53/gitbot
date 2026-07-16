@@ -1,13 +1,18 @@
 import { useState, useMemo } from "react";
-import { mockIssues, mockRepos } from "../../lib/mockData";
+import { useIssues, useRepos } from "../../lib/api";
 import { IssueListItem } from "../repo/IssueListItem";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
+import { useAppContext } from "../../context/AppContext";
 
 export function Issues() {
+  const { activeAccount } = useAppContext();
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
-  const allIssues = useMemo(() => Object.values(mockIssues).flat(), []);
+  
+  const { data: allIssues, loading: loadingIssues } = useIssues();
+  const { data: repos, loading: loadingRepos } = useRepos(activeAccount?.id);
 
   const displayLabels = useMemo(() => {
+    if (!allIssues) return ["bug", "feature", "stale", "unlabeled"];
     const labels = Array.from(new Set(allIssues.flatMap(i => i.labels)));
     if (allIssues.some(i => i.labels.length === 0) && !labels.includes("unlabeled")) {
       labels.push("unlabeled");
@@ -16,6 +21,7 @@ export function Issues() {
   }, [allIssues]);
 
   const issuesByRepo = useMemo(() => {
+    if (!allIssues) return [];
     const filteredIssues = selectedLabel 
       ? allIssues.filter(i => selectedLabel === "unlabeled" ? i.labels.length === 0 : i.labels.includes(selectedLabel))
       : allIssues;
@@ -23,10 +29,14 @@ export function Issues() {
     const grouped: Record<string, typeof allIssues> = {};
     for (const issue of filteredIssues) {
       if (!grouped[issue.repoId]) grouped[issue.repoId] = [];
-      grouped[issue.repoId].push(issue);
+      grouped[issue.repoId]!.push(issue);
     }
     return Object.entries(grouped);
   }, [allIssues, selectedLabel]);
+
+  if (loadingIssues || loadingRepos) {
+    return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
+  }
 
   return (
     <div className="p-4 space-y-6 animate-in fade-in duration-300 pb-20">
@@ -69,8 +79,8 @@ export function Issues() {
           <p className="text-[#8A93A3] text-sm text-center py-8">No matching issues</p>
         ) : (
           issuesByRepo.map(([repoId, repoIssues]) => {
-            const repo = mockRepos.find((r) => r.id === repoId);
-            if (!repo) return null;
+            const repo = repos?.find((r) => r.id === repoId);
+            if (!repo || !repoIssues) return null;
             return (
               <div key={repoId} className="space-y-3 relative">
                 <div className="sticky top-0 z-10 bg-[#0B0E13]/90 backdrop-blur-md py-2 -mx-4 px-4 border-b border-[#242B36] mb-4">

@@ -1,37 +1,58 @@
-import { useState } from "react";
-import { mockWorkflows, mockWorkflowRuns } from "../../lib/mockData";
+import { useState, useEffect } from "react";
+import { useWorkflows, useWorkflowRuns, api } from "../../lib/api";
 import { WorkflowRun } from "../../types";
 import { RotateCcw, Play, CheckCircle2, XCircle, Loader2, GitBranch, Clock } from "lucide-react";
 
 export function ActionsTab({ repoId }: { repoId: string }) {
+  const { data: workflowsData, loading: loadingWf } = useWorkflows(repoId);
+  const { data: runsData, loading: loadingRuns, mutate: refreshRuns } = useWorkflowRuns(repoId);
+
   const [restartingRuns, setRestartingRuns] = useState<Set<string>>(new Set());
   const [triggeringWorkflows, setTriggeringWorkflows] = useState<Set<string>>(new Set());
 
-  const workflows = mockWorkflows[repoId] || [];
-  const runs = mockWorkflowRuns[repoId] || [];
+  useEffect(() => {
+    const hasActiveRuns = (runsData || []).some(
+      (r) => r.status === "in_progress" || r.status === "queued"
+    );
+    if (hasActiveRuns) {
+      const interval = setInterval(() => {
+        refreshRuns();
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [runsData, refreshRuns]);
+
+  const workflows = workflowsData || [];
+  const runs = runsData || [];
 
   const dispatchableWorkflows = workflows.filter((w) => w.dispatchable);
 
-  const handleRestart = (runId: string) => {
+  const handleRestart = async (runId: string) => {
     setRestartingRuns((prev) => new Set(prev).add(runId));
-    setTimeout(() => {
+    try {
+      await api.restartWorkflowRun(repoId, runId);
+      await refreshRuns();
+    } finally {
       setRestartingRuns((prev) => {
         const next = new Set(prev);
         next.delete(runId);
         return next;
       });
-    }, 2000);
+    }
   };
 
-  const handleTrigger = (workflowId: string) => {
+  const handleTrigger = async (workflowId: string) => {
     setTriggeringWorkflows((prev) => new Set(prev).add(workflowId));
-    setTimeout(() => {
+    try {
+      await api.triggerWorkflow(repoId, workflowId);
+      await refreshRuns();
+    } finally {
       setTriggeringWorkflows((prev) => {
         const next = new Set(prev);
         next.delete(workflowId);
         return next;
       });
-    }, 2000);
+    }
   };
 
   const getStatusIcon = (run: WorkflowRun) => {
@@ -43,6 +64,10 @@ export function ActionsTab({ repoId }: { repoId: string }) {
     }
     return <XCircle size={16} className="text-[#FF6B6B]" />;
   };
+
+  if (loadingWf || loadingRuns) {
+    return <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
+  }
 
   return (
     <div className="space-y-6">

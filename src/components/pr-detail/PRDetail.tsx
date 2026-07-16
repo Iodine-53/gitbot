@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { mockPRs } from "../../lib/mockData";
+import { usePR } from "../../lib/api";
 import { Avatar } from "../shared/Avatar";
 import { StatusPill } from "../shared/StatusPill";
-import { ChevronLeft, Sparkles, ExternalLink, Beaker } from "lucide-react";
+import { ChevronLeft, Sparkles, ExternalLink, Beaker, Loader2 } from "lucide-react";
 
 export function PRDetail() {
   const { repoId, prId } = useParams<{ repoId: string; prId: string }>();
   const navigate = useNavigate();
   const [testingState, setTestingState] = useState<"idle" | "testing" | "passed" | "failed">("idle");
 
-  const pr = mockPRs[repoId || ""]?.find((p) => p.id === prId);
+  const { data: pr, loading } = usePR(repoId!, prId!);
 
+  if (loading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin text-[#8A93A3]" /></div>;
   if (!pr) return <div className="p-4">PR not found</div>;
 
   const statusMap = {
@@ -30,16 +31,6 @@ export function PRDetail() {
 
   return (
     <div className="flex flex-col pb-8 animate-in slide-in-from-right-4 duration-300">
-      <header className="sticky top-0 z-10 bg-[#0B0E13]/90 backdrop-blur-md border-b border-[#242B36] p-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center space-x-2 text-[#8A93A3] hover:text-[#E7EAF0] transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span className="font-medium text-sm">Back</span>
-        </button>
-      </header>
-
       <div className="p-4 space-y-6">
         {/* Header section */}
         <div>
